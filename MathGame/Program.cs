@@ -2,55 +2,118 @@
 
 var myGame = new Game();
 myGame.SetUserName();
-myGame.SelectGameOption();
 
-
-class Game
+while (true)
 {
-    public int[]? History { get; set; }
+    myGame.SelectGameOption();
+    myGame.ShowScore();
+}
 
+internal class GameData
+{
+    public string? Question { get; init; }
+    public bool IsCorrect { get; init; }
+    public int UserAnswer { get; set; }
+    public int CorrectAnswer { get; set; }
+}
+
+
+internal class Game
+{
     private string? PlayerName { get; set; }
+    private string? _gameOption;
+    private int _num1;
+    private int _num2;
+    private int _answer;
+    private const int QuestionCount = 5;
+    private int _score;
+    private readonly List<GameData>? _history = new List<GameData>();
 
-    private string? GameOption { get; set; }
+
+    private void ShowHistory()
+    {
+        if (_history == null)
+        {
+            AnsiConsole.MarkupLine("[blue bold]No history found![/]");
+            return;
+        }
+
+        var table = new Table();
+        table.Border(TableBorder.Rounded);
+
+        table.AddColumn("Question");
+        table.AddColumn("Your Answer");
+        table.AddColumn("Correct Answer");
+        table.AddColumn("Result");
+
+        foreach (var q in _history)
+        {
+            if (q.Question != null)
+                table.AddRow(q.Question, Convert.ToString(q.UserAnswer), Convert.ToString(q.CorrectAnswer),
+                    q.IsCorrect ? "[green]Correct[/]" : "[red]Incorrect[/]");
+        }
+
+        AnsiConsole.Write(table);
+    }
+
+    private void SetRandomNums(bool isDivision = false)
+    {
+        var rand = new Random();
+        if (isDivision)
+        {
+            _num1 = rand.Next(1, 100);
+            _num2 = rand.Next(1, 100);
+            while (_num1 % _num2 != 0)
+            {
+                _num1 = rand.Next(1, 100);
+                _num2 = rand.Next(1, 100);
+            }
+        }
+        else
+        {
+            _num1 = rand.Next(1, 100);
+            _num2 = rand.Next(1, 100);
+        }
+    }
 
     public void SetUserName()
     {
-        PlayerName = AnsiConsole.Ask<string>("What's your [bold maroon]name[/]?");
-        AnsiConsole.MarkupInterpolated($"Hi [bold maroon]{PlayerName}[/], This is a math game.\n");
+        PlayerName = AnsiConsole.Ask<string>("What's your [bold blue]name[/]?\n");
+        AnsiConsole.MarkupInterpolated($"Hi [bold blue]{PlayerName}[/], This is a math game.\n");
     }
 
     public void SelectGameOption()
     {
-        GameOption = AnsiConsole.Prompt(
+        _gameOption = AnsiConsole.Prompt(
             new SelectionPrompt<string>()
-                .Title("[bold maroon]Select an option:[/]")
-                .PageSize(5)
-                .HighlightStyle("bold maroon")
+                .Title("[bold blue]What what you like to do?[/]")
+                .PageSize(6)
+                .HighlightStyle("bold blue")
                 .AddChoices(new[]
                 {
-                    "Addition", "Subtraction", "Multiplication", "Division", "Quit"
+                    "Addition", "Subtraction", "Multiplication", "Division", "Show History", "Quit"
                 }));
         NavigateToOption();
     }
 
     private void NavigateToOption()
     {
-        switch (GameOption)
+        switch (_gameOption)
         {
             case "Addition":
                 AdditionGame();
                 break;
             case "Subtraction":
-                // Todo: Implement SubtractionGame
-                // SubtractionGame();
+                SubtractionGame();
                 break;
             case "Multiplication":
-                // Todo: Implement MultiplicationGame
-                // MultiplicationGame();
+                MultiplicationGame();
                 break;
             case "Division":
-                // Todo: Implement DivisionGame
-                // DivisionGame();
+                DivisionGame();
+                break;
+            case "Show History":
+                ShowHistory();
                 break;
             case "Quit":
                 Quit();
@@ -58,32 +121,83 @@ class Game
         }
     }
 
+
+    private void AdditionGame()
+    {
+        AnsiConsole.MarkupLine("[bold blue]Addition Selected![/]");
+        for (var i = 0; i < QuestionCount; i++)
+        {
+            SetRandomNums();
+            var q = $"What is {_num1} + {_num2}?:";
+            var userAnswer = AnsiConsole.Ask<int>($"What is [blue bold]{_num1} + {_num2}[/]?:");
+            var answer = _num1 + _num2;
+            var result = EvaluateAnswer(userAnswer: userAnswer, answer: answer);
+            _history?.Add(new GameData
+                { Question = q, UserAnswer = userAnswer, CorrectAnswer = answer, IsCorrect = result });
+        }
+    }
+
+    private void SubtractionGame()
+    {
+        AnsiConsole.MarkupLine("[bold blue]Subtraction Selected![/]");
+        for (var i = 0; i < QuestionCount; i++)
+        {
+            SetRandomNums();
+            var userAnswer = AnsiConsole.Ask<int>($"What is [blue bold]{_num1} - {_num2}[/]?:");
+            var answer = _num1 - _num2;
+            EvaluateAnswer(userAnswer: userAnswer, answer: answer);
+        }
+    }
+
+    private void MultiplicationGame()
+    {
+        AnsiConsole.MarkupLine("[bold blue]Multiplication Selected![/]");
+        for (var i = 0; i < QuestionCount; i++)
+        {
+            SetRandomNums();
+            var userAnswer = AnsiConsole.Ask<int>($"What is [bold blue]{_num1} * {_num2}[/]?:");
+            var answer = _num1 * _num2;
+            EvaluateAnswer(userAnswer: userAnswer, answer: answer);
+        }
+    }
+
+    private void DivisionGame()
+    {
+        Console.WriteLine("Division Selected!");
+        for (var i = 0; i < QuestionCount; i++)
+        {
+            SetRandomNums(isDivision: true);
+            _answer = _num1 / _num2;
+            var userAnswer = AnsiConsole.Ask<int>($"What is [bold blue]{_num1} / {_num2}[/]?:");
+            EvaluateAnswer(userAnswer: userAnswer, answer: _answer);
+        }
+    }
+
     private static void Quit()
     {
-        AnsiConsole.MarkupLine("[bold maroon]Goodbye[/]");
+        AnsiConsole.MarkupLine("[bold blue]Goodbye![/]");
         Environment.Exit(1);
     }
 
-    private static void AdditionGame()
-    {
-        Console.WriteLine("Addition Selected!");
-        var num1 = new Random().Next(0, 100);
-        var num2 = new Random().Next(0, 100);
-        var userAnswer = AnsiConsole.Ask<int>($"What is {num1} + {num2}?:");
-        var answer = num1 + num2;
-        EvaluateAnswer(userAnswer: userAnswer, answer: answer);
-    }
 
-    private static void EvaluateAnswer(int userAnswer, int answer)
+    private bool EvaluateAnswer(int userAnswer, int answer)
     {
         if (userAnswer == answer)
         {
             AnsiConsole.MarkupLine("[bold green]Correct![/]");
+            _score++;
+            return true;
         }
         else
         {
             AnsiConsole.MarkupLine("[bold red]Incorrect![/]");
-            AnsiConsole.MarkupLine($"The correct answer is [bold maroon]{answer}[/]");
+            AnsiConsole.MarkupLine($"[bold blue]The correct answer is: {answer}[/]");
+            return false;
         }
+    }
+
+    public void ShowScore()
+    {
+        AnsiConsole.MarkupLine($"[bold blue]Your current score is: {_score}[/]\n");
     }
 }
